@@ -13,6 +13,101 @@
     
     <!-- CSS -->
     <link rel="stylesheet" href="style.css">
+
+    <!-- PageTracker Analytics -->
+    <script>
+    (function() {
+      var TRACKING_ID = "3daef79e-9aa8-40fc-9bf3-dbe2548c929b";
+      var ENDPOINT = "https://iskaiaxrdqfembomiktk.supabase.co/functions/v1/track";
+      
+      function generateId() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      }
+      
+      function getVisitorId() {
+        var vid = localStorage.getItem('_pt_vid');
+        if (!vid) { vid = generateId(); localStorage.setItem('_pt_vid', vid); }
+        return vid;
+      }
+      
+      function getSessionId() {
+        var sid = sessionStorage.getItem('_pt_sid');
+        if (!sid) { sid = generateId(); sessionStorage.setItem('_pt_sid', sid); }
+        return sid;
+      }
+      
+      var visitorId = getVisitorId();
+      var sessionId = getSessionId();
+      var sessionStart = Date.now();
+      var isNewSession = !sessionStorage.getItem('_pt_started');
+      
+      function track(eventType, eventData) {
+        var payload = {
+          tracking_id: TRACKING_ID,
+          event_type: eventType,
+          page_url: window.location.href,
+          page_title: document.title,
+          referrer: document.referrer,
+          user_agent: navigator.userAgent,
+          screen_width: window.screen.width,
+          screen_height: window.screen.height,
+          session_id: sessionId,
+          visitor_id: visitorId,
+          event_data: eventData || {}
+        };
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(ENDPOINT, JSON.stringify(payload));
+        } else {
+          fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true });
+        }
+      }
+      
+      track('pageview');
+      
+      if (isNewSession) {
+        sessionStorage.setItem('_pt_started', '1');
+        track('session_start');
+      }
+      
+      document.addEventListener('click', function(e) {
+        var target = e.target;
+        while (target && target !== document) {
+          if (target.tagName === 'BUTTON' || target.tagName === 'A' || target.getAttribute('role') === 'button') {
+            track('click', {
+              element: target.tagName.toLowerCase(),
+              text: target.innerText ? target.innerText.substring(0, 100) : '',
+              id: target.id || null,
+              className: target.className || null,
+              href: target.href || null
+            });
+            break;
+          }
+          target = target.parentElement;
+        }
+      });
+      
+      setInterval(function() {
+        var duration = Math.floor((Date.now() - sessionStart) / 1000);
+        track('time_on_page', { duration_seconds: duration });
+      }, 30000);
+      
+      window.addEventListener('beforeunload', function() {
+        var duration = Math.floor((Date.now() - sessionStart) / 1000);
+        navigator.sendBeacon(ENDPOINT, JSON.stringify({
+          tracking_id: TRACKING_ID,
+          event_type: 'session_end',
+          page_url: window.location.href,
+          session_id: sessionId,
+          visitor_id: visitorId,
+          duration_seconds: duration
+        }));
+      });
+    })();
+    </script>
+    <!-- End PageTracker Analytics -->
 </head>
 <body>
 
